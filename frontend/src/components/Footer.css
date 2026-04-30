@@ -1,0 +1,32 @@
+.footer {
+  padding: 2rem 0;
+  border-top: 1px solid var(--surface-border);
+  margin-top: auto;
+}
+
+.footer__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.footer__text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.footer__built {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.footer__heart {
+  color: var(--error);
+  font-size: 0.9rem;
+  animation: pulse-glow 2s infinite;
+}
