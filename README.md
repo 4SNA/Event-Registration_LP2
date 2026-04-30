@@ -17,11 +17,12 @@ A full-stack MERN application for registering users for tech events. Registratio
 ```
 event-registration/
 ├── backend/
-│   ├── config/db.js          # MongoDB connection
+│   ├── config/db.js           # MongoDB connection
 │   ├── models/Registration.js # Mongoose schema
-│   ├── routes/registrations.js # CRUD API routes
+│   ├── routes/registrations.js# CRUD API routes
 │   ├── server.js              # Express entry point
-│   ├── .env                   # Environment variables
+│   ├── .env                   # Backend environment variables
+│   ├── .env.example           # Backend env template
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -30,10 +31,62 @@ event-registration/
 │   │   ├── App.jsx            # Router setup
 │   │   ├── main.jsx           # Entry point
 │   │   └── index.css          # Design system
-│   ├── .env                   # API URL config
+│   ├── .env                   # Frontend environment variables
+│   ├── .env.example           # Frontend env template
 │   └── package.json
+├── .gitignore
 └── README.md
 ```
+
+---
+
+## 🔑 Environment Variables Reference
+
+### Backend `.env`
+
+Create a `.env` file inside the `backend/` directory:
+
+```env
+# ---- backend/.env ----
+
+# Port on which the Express server will run
+PORT=5000
+
+# MongoDB Atlas connection string
+# Replace <username>, <password>, and cluster URL with your own
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/event-registration?retryWrites=true&w=majority
+
+# Set to "development" locally, "production" on EC2
+# When "production", the backend serves the React build as static files
+NODE_ENV=development
+```
+
+| Variable    | Description                                    | Example                                      |
+| ----------- | ---------------------------------------------- | -------------------------------------------- |
+| `PORT`      | Server port                                    | `5000`                                       |
+| `MONGO_URI` | MongoDB Atlas connection string                | `mongodb+srv://user:pass@cluster0.xxx.mongodb.net/event-registration` |
+| `NODE_ENV`  | `development` (local) or `production` (EC2)    | `production`                                 |
+
+### Frontend `.env`
+
+Create a `.env` file inside the `frontend/` directory:
+
+```env
+# ---- frontend/.env ----
+
+# Backend API base URL
+# Local development → http://localhost:5000
+# EC2 production    → http://<YOUR_EC2_PUBLIC_IP>:5000
+VITE_API_URL=http://localhost:5000
+```
+
+| Variable       | Description                          | Local Value                | EC2 Value                              |
+| -------------- | ------------------------------------ | -------------------------- | -------------------------------------- |
+| `VITE_API_URL` | Base URL the frontend uses for API calls | `http://localhost:5000` | `http://<YOUR_EC2_PUBLIC_IP>:5000`     |
+
+> **⚠️ Important:** Vite environment variables must be prefixed with `VITE_` to be exposed to the frontend code. After changing `.env`, you must **rebuild** the frontend (`npm run build`) for changes to take effect in production.
+
+---
 
 ## 🚀 Local Development
 
@@ -41,47 +94,49 @@ event-registration/
 
 1. Go to [MongoDB Atlas](https://cloud.mongodb.com/)
 2. Create a free cluster
-3. Create a database user
-4. Whitelist your IP (or `0.0.0.0/0` for development)
-5. Get your connection string
+3. Create a database user (note down the username & password)
+4. Go to **Network Access** → Add IP → Whitelist your IP (or `0.0.0.0/0` for development)
+5. Go to **Database** → **Connect** → **Drivers** → Copy the connection string
 
-### 2. Configure Backend
+### 2. Configure & Start Backend
 
 ```bash
 cd event-registration/backend
 ```
 
-Edit `.env`:
-```
+Create the `.env` file:
+```env
 PORT=5000
 MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/event-registration?retryWrites=true&w=majority
 NODE_ENV=development
 ```
 
-Install and start:
+Install dependencies and start:
 ```bash
 npm install
 npm run dev
 ```
 
-### 3. Configure Frontend
+Backend will start on `http://localhost:5000`
+
+### 3. Configure & Start Frontend
 
 ```bash
 cd event-registration/frontend
 ```
 
-Edit `.env`:
-```
+Create the `.env` file:
+```env
 VITE_API_URL=http://localhost:5000
 ```
 
-Install and start:
+Install dependencies and start:
 ```bash
 npm install
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173`, Backend on `http://localhost:5000`
+Frontend will start on `http://localhost:5173`
 
 ---
 
@@ -89,10 +144,16 @@ Frontend runs on `http://localhost:5173`, Backend on `http://localhost:5000`
 
 ### Step 1: Launch EC2 Instance
 
-- AMI: **Ubuntu 22.04 LTS**
-- Instance type: **t2.micro** (free tier)
-- Security Group: Open ports **22 (SSH)**, **5000 (Backend/App)**
-- Create/download your `.pem` key pair
+- **AMI:** Ubuntu 22.04 LTS
+- **Instance type:** t2.micro (free tier eligible)
+- **Security Group Inbound Rules:**
+
+| Type       | Port | Source    | Purpose         |
+| ---------- | ---- | --------- | --------------- |
+| SSH        | 22   | My IP     | SSH access      |
+| Custom TCP | 5000 | 0.0.0.0/0 | Application     |
+
+- Create and download your `.pem` key pair
 
 ### Step 2: Connect to EC2
 
@@ -104,25 +165,25 @@ ssh -i your-key.pem ubuntu@<YOUR_EC2_PUBLIC_IP>
 ### Step 3: Install Dependencies on EC2
 
 ```bash
-# Update system
+# Update system packages
 sudo apt update && sudo apt upgrade -y
 
 # Install Node.js 20.x
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Verify
-node -v
-npm -v
+# Verify installation
+node -v    # Should show v20.x.x
+npm -v     # Should show 10.x.x
 
 # Install Git
 sudo apt install -y git
 
-# Install PM2 (process manager)
+# Install PM2 process manager globally
 sudo npm install -g pm2
 ```
 
-### Step 4: Clone & Setup Project
+### Step 4: Clone the Project
 
 ```bash
 cd ~
@@ -130,66 +191,92 @@ git clone <YOUR_GITHUB_REPO_URL> event-registration
 cd event-registration
 ```
 
-### Step 5: Configure Backend
+### Step 5: Configure Backend `.env` on EC2
 
 ```bash
 cd backend
 npm install
 
-# Create .env file
+# Create the backend .env file
 nano .env
 ```
 
-Paste:
-```
+Paste the following (replace with your actual MongoDB credentials):
+
+```env
 PORT=5000
 MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/event-registration?retryWrites=true&w=majority
 NODE_ENV=production
 ```
 
-### Step 6: Build Frontend
+Save and exit: `Ctrl+X` → `Y` → `Enter`
+
+### Step 6: Configure Frontend `.env` & Build on EC2
 
 ```bash
 cd ../frontend
 npm install
 
-# Set the API URL to your EC2 public IP
-echo "VITE_API_URL=http://<YOUR_EC2_PUBLIC_IP>:5000" > .env
+# Create the frontend .env file
+nano .env
+```
 
-# Build for production
+Paste the following (replace `<YOUR_EC2_PUBLIC_IP>` with your actual EC2 IP):
+
+```env
+VITE_API_URL=http://<YOUR_EC2_PUBLIC_IP>:5000
+```
+
+Save and exit: `Ctrl+X` → `Y` → `Enter`
+
+Now build the production bundle:
+
+```bash
 npm run build
 ```
 
-### Step 7: Start Backend with PM2
+> This creates a `dist/` folder. The backend will serve these files when `NODE_ENV=production`.
+
+### Step 7: Start the Application with PM2
 
 ```bash
 cd ../backend
 pm2 start server.js --name event-registration
 pm2 save
-pm2 startup   # follow the printed command to auto-start on reboot
+pm2 startup    # Follow the printed command to enable auto-start on reboot
 ```
 
 ### Step 8: Access the Application
 
-Open your browser:
+Open your browser and visit:
+
 ```
 http://<YOUR_EC2_PUBLIC_IP>:5000
 ```
 
-The backend serves the React build in production mode.
+The Express backend serves both the API and the React frontend in production mode.
+
+---
+
+## 🔒 MongoDB Atlas — Whitelist EC2 IP
+
+In MongoDB Atlas:
+1. Go to **Network Access**
+2. Click **Add IP Address**
+3. Add your EC2 instance's public IP, or `0.0.0.0/0` (allow from anywhere) for testing
 
 ---
 
 ## 📡 API Endpoints
 
-| Method | Endpoint                  | Description              |
-| ------ | ------------------------- | ------------------------ |
-| GET    | `/api/registrations`      | Get all registrations    |
-| GET    | `/api/registrations/stats`| Get registration stats   |
-| GET    | `/api/registrations/:id`  | Get single registration  |
-| POST   | `/api/registrations`      | Create new registration  |
-| DELETE | `/api/registrations/:id`  | Delete a registration    |
-| GET    | `/api/health`             | Health check             |
+| Method | Endpoint                   | Description              |
+| ------ | -------------------------- | ------------------------ |
+| GET    | `/api/registrations`       | Get all registrations    |
+| GET    | `/api/registrations/stats` | Get registration stats   |
+| GET    | `/api/registrations/:id`   | Get single registration  |
+| POST   | `/api/registrations`       | Create new registration  |
+| DELETE | `/api/registrations/:id`   | Delete a registration    |
+| GET    | `/api/health`              | Health check             |
 
 ### POST `/api/registrations` — Request Body
 
@@ -207,9 +294,17 @@ The backend serves the React build in production mode.
 
 ---
 
-## 🔒 MongoDB Atlas — Whitelist EC2 IP
+## 🛠️ Useful PM2 Commands (On EC2)
 
-In MongoDB Atlas → Network Access → Add your EC2's public IP, or `0.0.0.0/0` (allow from anywhere) for testing.
+```bash
+pm2 status                     # Check if app is running
+pm2 logs event-registration    # View live logs
+pm2 restart event-registration # Restart the app
+pm2 stop event-registration    # Stop the app
+pm2 delete event-registration  # Remove from PM2
+```
+
+---
 
 ## 📝 Key Features
 
