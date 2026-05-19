@@ -247,7 +247,7 @@ Paste:
 
 ```env
 PORT=5000
-MONGO_URI=mongodb+srv://lp2_user:lp2password123@cluster0.tki1kaj.mongodb.net/event-registration?retryWrites=true&w=majority&appName=Cluster0
+MONGO_URI=
 NODE_ENV=production
 ```
 
